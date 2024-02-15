@@ -4,11 +4,14 @@ const cloudinary = require("cloudinary");
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
-const from =process.env.MAIL_USER
+const from = process.env.MAIL_USER
+
+
 const displayWelcome = (req, res) => {
   res.send("Hello World");
   console.log("Hello World");
 };
+
 
 cloudinary.config({
   cloud_name: 'dphfgjzit',
@@ -76,8 +79,8 @@ const sendOTP = async (email) => {
 };
 
 const verifyOTP = async (req, res) => {
-  const { email, otp } = req.body;
-  console.log(email, otp);
+  const { email, otpCodes } = req.body;
+  console.log(email, otpCodes);
   try {
     const user = await Student.findOne({ email: email });
     if (!user) {
@@ -85,7 +88,7 @@ const verifyOTP = async (req, res) => {
       res.status(404).send("User not found");
       return;
     }
-    if (user.otp === otp) {
+    if (user.OTP == otpCodes) {
       console.log("OTP verified successfully");
       res.status(200).send("OTP verified successfully");
     } else {
@@ -103,7 +106,8 @@ const resendOTP = async (req, res) => {
   const { email } = req.body;
   try {
     const otp = await sendOTP(email);
-    res.status(200).send("OTP resent successfully");
+    // res.status(200).send("OTP resent successfully");
+    res.status(200).json({ message: "OTP resent successfully", status: true });
   } catch (error) {
     console.error("Error resending OTP:", error);
     res.status(500).send("Internal server error");
@@ -148,48 +152,30 @@ const resetEmail = async (req, res) => {
   }
 };
 
-// const resetEmail = async (req, res) => {
-//   const { email } = req.body;
-//   const user = await Student.findOne({ email })
-//     .then((user) => {
-//       if (user) {
-//         const OTP = generateFourDigitNumber();
-//         const mailOptions = {
-//           from: from,
-//           to: `${email}`,
-//           subject: 'Your OTP Code',
-//           text: `Your OTP code is: ${OTP}`
-//         };
-//         transporter.sendMail(mailOptions)
-//           .then((res) => {
-//             console.log(res);
-//             if (res) {
-//               Student.findOneAndUpdate({ email }, { OTP: OTP })
-//               .then((res)=>{
-//                 if (res) {
-                  
-//                 } else {
-                  
-//                 }
-//               })
-//             } else {
 
-//             }
-//           }).catch(() => {
-//             console.log('not sent');
-//           })
-//       } else {
-//         res.status(500).json({
-//           message: 'user donot exist',
-//           status: false
-//         })
-//       }
-//     }).catch((err) => {
-//       res.status(500).json({
-//         message: 'oppps something went wrong',
-//         status: false
-//       })
-//     });
-// }
+const resetpassword = async (req, res) => {
+  const { email, newPassword } = req.body;
 
-module.exports = { displayWelcome, register, login, verifyOTP, resendOTP, uploadFile, resetEmail };
+  try {
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 is the number of salt rounds
+
+    // Update the user's password in the database
+    const user = await Student.findOneAndUpdate({ email }, { password: hashedPassword });
+
+    if (user) {
+      // Password updated successfully
+      res.status(200).json({ message: 'Password reset successful', status: true });
+    } else {
+      // User not found
+      res.status(500).json({ message: 'User not found', status: false });
+    }
+  } catch (error) {
+    // Error occurred
+    console.error('Error resetting password:', error);
+    res.status(500).json({ message: 'Internal server error', status: false });
+  }
+};
+
+
+module.exports = { displayWelcome, register, login, verifyOTP, resendOTP, uploadFile, resetEmail, resetpassword };
