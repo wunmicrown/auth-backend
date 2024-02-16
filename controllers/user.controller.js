@@ -26,6 +26,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.MAIL_PASS,
   }
 });
+
 function generateFourDigitNumber() {
   return Math.floor(Math.random() * 9000) + 1000;
 }
@@ -33,10 +34,16 @@ function generateFourDigitNumber() {
 const register = async (req, res) => {
   console.log(req.body);
   try {
+    const { email } = req.body;
+    const userExists = await Student.findOne({ email });
+    if (userExists) {
+      return res.status(409).send("User already exists");
+    }
+
     let student = new Student(req.body);
-    const user = await student.save();
+    const user = await student.save(); 
     console.log("User registered successfully");
-    res.send(user);
+    res.status(201).json(user);
   } catch (err) {
     console.log(err);
     res.status(500).send("Internal server error");
@@ -120,8 +127,8 @@ const uploadFile = (req, res) => {
     let storedImage = result.secure_url;
     res.send({ message: "image uploaded  successfully", status: true, storedImage });
   }))
-
 }
+
 const resetEmail = async (req, res) => {
   const { email } = req.body;
   try {
@@ -178,4 +185,13 @@ const resetpassword = async (req, res) => {
 };
 
 
-module.exports = { displayWelcome, register, login, verifyOTP, resendOTP, uploadFile, resetEmail, resetpassword };
+module.exports = {
+  displayWelcome,
+  register,
+  login,
+  verifyOTP,
+  resendOTP,
+  uploadFile,
+  resetEmail,
+  resetpassword
+};
