@@ -4,6 +4,7 @@ const cloudinary = require("cloudinary");
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
+const { signupPayloadValidator, schemaValidatorHandler } = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
 
 
@@ -32,8 +33,9 @@ function generateFourDigitNumber() {
 }
 
 const register = async (req, res) => {
-  console.log(req.body);
+  console.log(req.body, req.url, req.route);
   try {
+    // Check if the user already exists
     const { email } = req.body;
     const userExists = await Student.findOne({ email });
     if (userExists) {
