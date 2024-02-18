@@ -17,7 +17,7 @@ const SchemaMapper = (path) => {
     switch (path) {
         case "/signup":
             return signupPayloadValidator
-        case "/singin":
+        case "/signin":
             return signinPayLoadValidator
         case "/resetEmail":
             return resetEmailPayLoad
