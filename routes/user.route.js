@@ -10,12 +10,12 @@ const { ValidatorMDW } = require("../validators/AuthHandler");
 
 router.get("/", displayWelcome);
 router.post("/signup", ValidatorMDW, register);
-router.post("/signin", login);
+router.post("/signin",ValidatorMDW, login);
 router.post("/verifyOTP", verifyOTP);
 router.post("/resendOTP", resendOTP);
 router.post("/uploadFile", uploadFile);
-router.post("/resetEmail", resetEmail)
-router.post('/resetpassword', resetpassword)
+router.post("/resetEmail", ValidatorMDW, resetEmail)
+router.post('/resetpassword', ValidatorMDW, resetpassword)
 
 
 

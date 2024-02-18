@@ -1,4 +1,11 @@
-const { signupPayloadValidator, schemaValidatorHandler, signinPayLoadValidator, wildCardValidator } = require("./AuthSchema");
+const {
+    signupPayloadValidator,
+    schemaValidatorHandler,
+    signinPayLoadValidator,
+    resetEmailPayLoad,
+    resetPasswordlPayLoad,
+    wildCardValidator
+} = require("./AuthSchema");
 
 
 /**
@@ -6,30 +13,34 @@ const { signupPayloadValidator, schemaValidatorHandler, signinPayLoadValidator, 
  * @param {string} path  request path name
  * @returns Joi.object
  */
-const SchemaMapper=(path)=>{
+const SchemaMapper = (path) => {
     switch (path) {
         case "/signup":
             return signupPayloadValidator
         case "/singin":
-            return signinPayLoadValidator          
+            return signinPayLoadValidator
+        case "/resetEmail":
+            return resetEmailPayLoad
+        case "/resetpassword":
+            return resetPasswordlPayLoad
         default:
             return wildCardValidator
-            
+
     }
 }
 
-const ValidatorMDW=async (req, res, next)=>{
-    const {path} = req.route
+const ValidatorMDW = async (req, res, next) => {
+    const { path } = req.route
     const validatorSchema = SchemaMapper(path)
-    const {valid, error} = await schemaValidatorHandler(validatorSchema, req.body)
-    if(!valid){
-      return res.status(400).json(error);
+    const { valid, error } = await schemaValidatorHandler(validatorSchema, req.body)
+    if (!valid) {
+        return res.status(400).json(error);
     }
 
     next()
 }
 
-module.exports={
+module.exports = {
     SchemaMapper,
     ValidatorMDW
 }

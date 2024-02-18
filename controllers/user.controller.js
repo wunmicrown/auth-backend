@@ -4,7 +4,7 @@ const cloudinary = require("cloudinary");
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
-const { signupPayloadValidator, schemaValidatorHandler } = require("../validators/AuthSchema");
+const { signupPayloadValidator, schemaValidatorHandler, resetpasswordPayLoadValidator } = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
 
 
@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-function generateFourDigitNumber() {
+const  generateFourDigitNumber=()=> {
   return Math.floor(Math.random() * 9000) + 1000;
 }
 
