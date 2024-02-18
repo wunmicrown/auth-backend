@@ -37,7 +37,7 @@ const schemaValidatorHandler = async(validatorSchema, payload)=>{
 
 /** The Validator for user login payload */
 const signinPayLoadValidator = Joi.object({
-    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{8,}$')),
+    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{8,}$')).required(),
     email: Joi.string().email().required(),
 
 })
@@ -65,6 +65,8 @@ const uploadFilePayLoad = Joi.object({
 // The payload object for resetPasswordPayload
 const resetPasswordlPayLoad = Joi.object({
     email: Joi.string().email().required(),
+    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{8,}$')).required(),
+
 })
 
 const wildCardValidator = Joi.object({})

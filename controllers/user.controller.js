@@ -4,7 +4,7 @@ const cloudinary = require("cloudinary");
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
-const { signupPayloadValidator, schemaValidatorHandler, resetpasswordPayLoadValidator } = require("../validators/AuthSchema");
+const { signupPayloadValidator, schemaValidatorHandler, resetEmailPayLoad, resetPasswordlPayLoad } = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
 
 
@@ -93,7 +93,7 @@ const verifyOTP = async (req, res) => {
   try {
     const user = await Student.findOne({ email: email });
     if (!user) {
-      console.log("User not found");
+      console.log("User not found");  
       res.status(404).send("User not found");
       return;
     }
