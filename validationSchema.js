@@ -40,9 +40,13 @@ const verifyOTPPayLoad = Joi.object({
 const resendOTPPayLoad = Joi.object({
     OTP: Joi.string().required(),
 })
+
+// The payload object for uploadFilePayLoad
 const uploadFilePayLoad = Joi.object({
     file: Joi.string().required(),
 })
+
+// The payload object for resetPasswordPayload
 const resetPasswordlPayLoad = Joi.object({
     email: Joi.string().email().required(),
 })
