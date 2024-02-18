@@ -3,6 +3,7 @@ const Joi = require("joi");
 
 
  const registerPayLoad=Joi.object({
+    // The payload object for create user
     firstName: Joi.string()
     .alphanum()
     .min(3)
@@ -14,7 +15,7 @@ const Joi = require("joi");
     .max(40)
     .required(),
     password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{8,}$')),
-    email:Joi.string().email(),            
+    email:Joi.string().email().required(),            
 
 })
 
