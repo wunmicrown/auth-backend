@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require("bcrypt")
-const env=require("dotenv")
+const env=require("dotenv");
 let URI=process.env.URI
 mongoose.connect(URI)
 .then((response)=>{
