@@ -24,14 +24,14 @@ const signupPayloadValidator = Joi.object({
  * @param {*} payload 
  * @returns object
  */
-const schemaValidatorHandler = async(validatorSchema, payload)=>{
+const schemaValidatorHandler = async (validatorSchema, payload) => {
     try {
-        await validatorSchema.validateAsync(payload, {abortEarly: false});
-        return  {valid: true, error: null};
+        await validatorSchema.validateAsync(payload, { abortEarly: false });
+        return { valid: true, error: null };
     } catch (error) {
-        const {details} = error
+        const { details } = error
         const messages = details.map(detail => detail.message)
-        return {valid: false, error: messages}
+        return { valid: false, error: messages }
     }
 }
 

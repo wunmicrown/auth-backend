@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const  generateFourDigitNumber=()=> {
+const generateFourDigitNumber = () => {
   return Math.floor(Math.random() * 9000) + 1000;
 }
 
@@ -43,7 +43,7 @@ const register = async (req, res) => {
     }
 
     let student = new Student(req.body);
-    const user = await student.save(); 
+    const user = await student.save();
     console.log("User registered successfully");
     res.status(201).json(user);
   } catch (err) {
@@ -93,7 +93,7 @@ const verifyOTP = async (req, res) => {
   try {
     const user = await Student.findOne({ email: email });
     if (!user) {
-      console.log("User not found");  
+      console.log("User not found");
       res.status(404).send("User not found");
       return;
     }
