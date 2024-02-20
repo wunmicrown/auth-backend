@@ -6,7 +6,7 @@ const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
 const { signupPayloadValidator, schemaValidatorHandler, resetEmailPayLoad, resetPasswordlPayLoad } = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
-
+const jwt= require("jsonwebtoken")
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
@@ -54,26 +54,47 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
+  const secretkey=process.env.SECRETKEY
   try {
     const student = await Student.findOne({ email });
     if (!student) {
       console.log("User not found");
       res.status(404).send("User not found");
-      return;
     }
     const match = await bcrypt.compare(password, student.password);
     if (!match) {
       console.log("Invalid password");
       res.status(401).send("Invalid password");
-      return;
     }
-    console.log("Login successful");
-    res.status(200).send("Login successful");
+      jwt.sign({email},secretkey,{expiresIn:'1h'},(err,token)=>{
+        if (err) {
+          console.error('JWT Verification failed:', err.message)
+        } else {
+            console.log(token);
+            res.status(200).send({message:"user Signed successfully", status:true,user:student,token:token})
+        }
+  
+      });
+    
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal server error");
   }
 };
+
+const verifyToken = (req, res) => {
+  const { token } = req.body;
+  const secretkey = process.env.SECRETKEY;
+  jwt.verify(token, secretkey, (err, decoded) => {
+    if (err) {
+      console.error('Token Verification failed:', err.message)
+      return res.status(401).json({ message: 'Token verification failed', status: false });
+    } else {
+      console.log('Token verified successfully');
+      res.status(200).send({ message: 'Token verified successfully', status: true, token: token});
+    }
+  });
+}
 
 const sendOTP = async (email) => {
   try {
@@ -195,5 +216,6 @@ module.exports = {
   resendOTP,
   uploadFile,
   resetEmail,
-  resetpassword
+  resetpassword,
+  verifyToken
 };
