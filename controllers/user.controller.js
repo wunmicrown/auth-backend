@@ -55,7 +55,7 @@ const signup = async (req, res) => {
 
     // Hash the password before saving the user
     if (req.body.password) {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10); 
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
       req.body.password = hashedPassword;
     }
 
@@ -79,7 +79,7 @@ const signup = async (req, res) => {
       html: `<p>Your OTP for email verification is: <strong>${otpGen}</strong></p>`,
     };
 
-    transporter.sendMail(mailOptions, function(error, info){
+    transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
         console.log(error);
         res.status(500).send("Failed to send verification email");
@@ -99,22 +99,22 @@ const signup = async (req, res) => {
 
 
 const signupVerification = async (req, res) => {
-    const { otp } = req.body;
-   Student.findOne({ otp })
-   .then((user)=>{
-    
-      if(user.otp == otp){
+  const { otp } = req.body;
+  Student.findOne({ otp })
+    .then((user) => {
+
+      if (user.otp == otp) {
         console.log("OTP verified");
-        res.send({message:"OTP verifed successfully", status: true})
-      }else{
+        res.send({ message: "OTP verifed successfully", status: true })
+      } else {
         console.log("OTP not verified")
       }
-   })
-    
+    })
+
 }
 
- 
-  
+
+
 
 
 
