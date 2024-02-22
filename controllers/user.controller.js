@@ -4,9 +4,15 @@ const cloudinary = require("cloudinary");
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
-const { signupPayloadValidator, schemaValidatorHandler, resetEmailPayLoad, resetPasswordlPayLoad } = require("../validators/AuthSchema");
+const {
+  signupPayloadValidator,
+  schemaValidatorHandler,
+  resetEmailPayLoad,
+  resetPasswordlPayLoad
+
+} = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
-const jwt= require("jsonwebtoken")
+const jwt = require("jsonwebtoken")
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
@@ -32,7 +38,12 @@ const generateFourDigitNumber = () => {
   return Math.floor(Math.random() * 9000) + 1000;
 }
 
-const register = async (req, res) => {
+const generateSixDigitNumber = () => {
+  return Math.floor(Math.random() * 900000) + 100000;
+};
+
+
+const signup = async (req, res) => {
   console.log(req.body, req.url, req.route);
   try {
     // Check if the user already exists
@@ -42,56 +53,158 @@ const register = async (req, res) => {
       return res.status(409).send("User already exists");
     }
 
-    let student = new Student(req.body);
+    // Hash the password before saving the user
+    if (req.body.password) {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10); 
+      req.body.password = hashedPassword;
+    }
+
+    // Generate an OTP for email verification
+    const otpGen = generateSixDigitNumber();
+
+    // Save the OTP to the database
+    const student = new Student({
+      ...req.body,
+      otp: otpGen // Save OTP along with other user details
+    });
     const user = await student.save();
-    console.log("User registered successfully");
-    res.status(201).json(user);
+
+    // Send OTP to the user's email
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Verify Your Email',
+      text: `Your OTP for email verification is: ${otpGen}`,
+      // Optionally, include an HTML version
+      html: `<p>Your OTP for email verification is: <strong>${otpGen}</strong></p>`,
+    };
+
+    transporter.sendMail(mailOptions, function(error, info){
+      if (error) {
+        console.log(error);
+        res.status(500).send("Failed to send verification email");
+      } else {
+        console.log('Email sent: ' + info.response);
+        res.status(201).send({ message: "User registered successfully. Verification OTP sent to email.", user: user });
+      }
+    });
   } catch (err) {
     console.log(err);
     res.status(500).send("Internal server error");
   }
 };
 
-const login = async (req, res) => {
-  const { email, password } = req.body;
-  const secretkey=process.env.SECRETKEY
-  try {
-    const student = await Student.findOne({ email });
-    if (!student) {
-      console.log("User not found");
-      res.status(404).send("User not found");
-    }
-    const match = await bcrypt.compare(password, student.password);
-    if (!match) {
-      console.log("Invalid password");
-      res.status(401).send("Invalid password");
-    }
-      jwt.sign({email},secretkey,{expiresIn:'1h'},(err,token)=>{
-        if (err) {
-          console.error('JWT Verification failed:', err.message)
-        } else {
-            console.log(token);
-            res.status(200).send({message:"user Signed successfully", status:true,user:student,token:token})
-        }
-  
-      });
+
+
+
+
+const signupVerification = async (req, res) => {
+    const { otp } = req.body;
+   Student.findOne({ otp })
+   .then((user)=>{
     
+      if(user.otp == otp){
+        console.log("OTP verified");
+        res.send({message:"OTP verifed successfully", status: true})
+      }else{
+        console.log("OTP not verified")
+      }
+   })
+    
+}
+
+ 
+  
+
+
+
+const resendSignupOTP = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await Student.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate a new OTP
+    const otp = generateSixDigitNumber();
+    // Update the user's OTP in the database
+    user.otp = otp;
+    await user.save();
+
+    // Send the new OTP to the user's email
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Resend OTP',
+      text: `Your new OTP is: ${otp}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: 'New OTP sent successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal server error");
+    console.error('Error resending OTP:', error);
+    res.status(500).json({ message: 'Failed to resend OTP' });
   }
 };
+
+
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  Student.findOne({ email })
+    .then(user => {
+      if (!user) {
+        console.log("User not found");
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Compare the provided password with the hashed password in the database
+      bcrypt.compare(password, user.password)
+        .then(match => {
+          if (!match) {
+            console.log("Incorrect password");
+            return res.status(401).json({ message: "Incorrect password" });
+          }
+
+          // Password is correct, proceed with login
+          const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
+          return res.status(200).json({ message: "Login successful", status: true, user, token });
+        })
+        .catch(error => {
+          console.error("Error comparing passwords:", error);
+          return res.status(500).json({ message: "Internal server error" });
+        });
+    })
+    .catch(error => {
+      console.error("Error finding user:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    });
+};
+
+
+
+
 
 const verifyToken = (req, res) => {
   const { token } = req.body;
   const secretkey = process.env.SECRETKEY;
+
+
+  if (!token) {
+    return res.status(401).send({ message: 'Token not provided', status: false });
+  }
+
+
   jwt.verify(token, secretkey, (err, decoded) => {
+    console.log(decoded);
     if (err) {
       console.error('Token Verification failed:', err.message)
       return res.status(401).json({ message: 'Token verification failed', status: false });
     } else {
       console.log('Token verified successfully');
-      res.status(200).send({ message: 'Token verified successfully', status: true, token: token});
+      res.status(200).send({ message: 'Token verified successfully', status: true, token: token, valid: true });
     }
   });
 }
@@ -208,14 +321,20 @@ const resetpassword = async (req, res) => {
 };
 
 
+
+
+
 module.exports = {
   displayWelcome,
-  register,
+  signup,
   login,
   verifyOTP,
   resendOTP,
   uploadFile,
   resetEmail,
   resetpassword,
-  verifyToken
+  verifyToken,
+  signupVerification,
+  resendSignupOTP
 };
+
