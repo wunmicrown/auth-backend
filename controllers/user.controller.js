@@ -417,26 +417,34 @@ const verifyOTP = async (req, res) => {
  */
 const resetpassword = async (req, res) => {
   const { email, newPassword } = req.body;
+
   try {
+    // Validate the request payload
+    const validationResult = await schemaValidatorHandler(resetPasswordlPayLoad, { password: newPassword, email });
+    if (!validationResult.valid) {
+      return res.status(400).json({ message: "Invalid request payload", errors: validationResult.error });
+    }
+
     // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 is the number of salt rounds
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password in the database
     const user = await Student.findOneAndUpdate({ email }, { password: hashedPassword });
 
     if (user) {
       // Password reset successful
-      res.status(200).json({ message: 'Password reset successful', status: true });
+      return res.status(200).json({ message: 'Password reset successful', status: true });
     } else {
       // User not found
-      res.status(500).json({ message: 'User not found', status: false });
+      return res.status(404).json({ message: 'User not found', status: false });
     }
   } catch (error) {
     // Handle errors
     console.error('Error resetting password:', error);
-    res.status(500).json({ message: 'Internal server error', status: false });
+    return res.status(500).json({ message: 'Internal server error', status: false });
   }
 };
+
 
 
 
