@@ -4,7 +4,7 @@ const otpGenerator = require("otp-generator");
 const sendOTP = async (email) => {
   try {
     // Generate OTP
-    const otp = otpGenerator.generate(4, { upperCase: false, specialChars: false, alphabets: false });
+    const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false, alphabets: false });
 
     // Create SMTP transporter
     let transporter = nodemailer.createTransport({
