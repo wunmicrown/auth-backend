@@ -49,7 +49,7 @@ const generateSixDigitNumber = () => {
  * @returns {Promise<void>} - A promise that resolves once the registration process is complete.
  */
 const signup = async (req, res) => {
-  console.log(req.body, req.url, req.route);
+  // console.log(req.body, req.url, req.route);
   try {
     // Destructure email from the request body
     const { email } = req.body;
@@ -206,7 +206,7 @@ const login = async (req, res) => {
 
     // Compare the provided password with the hashed password in the database
     const match = await bcrypt.compare(password, user.password);
-
+    console.log(match);
     // Check if passwords match
     if (!match) {
       console.log("Incorrect password");
