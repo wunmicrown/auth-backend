@@ -97,14 +97,10 @@ const signup = async (req, res) => {
       }
     });
   } catch (err) {
-    console.log(err);
+    console.error("Error during signup:", err);
     res.status(500).send("Internal server error");
   }
 };
-
-
-
-
 
 
 /**
@@ -203,10 +199,14 @@ const login = async (req, res) => {
       console.log("User not found");
       return res.status(404).json({ message: "User not found", status: false });
     }
+    // Log the plaintext password and the hashed password retrieved from the database
+    console.log("Plaintext password:", password, user.password);
+    console.log("Hashed password from database:", user.password);
+
 
     // Compare the provided password with the hashed password in the database
     const match = await bcrypt.compare(password, user.password);
-    console.log(match);
+    console.log("bcrypt.compare result:", match);
     // Check if passwords match
     if (!match) {
       console.log("Incorrect password");
@@ -303,17 +303,43 @@ const sendOTP = async (email) => {
 const resendOTP = async (req, res) => {
   const { email } = req.body;
   try {
-    // Generate and send a new OTP
-    const otp = await sendOTP(email);
+    // Generate a new OTP
+    const otp = generateSixDigitNumber(); // Assuming generateSixDigitNumber is a function that generates a new OTP as a number
 
-    // Send success response
-    res.status(200).json({ message: "OTP resent successfully", status: true });
+    // Sending OTP to the user's email
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Reset Your Password',
+      text: `Your OTP for password reset is: ${otp}`,
+      // Optionally, include an HTML version
+      html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p>`,
+    };
+    
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    console.log(`OTP sent to ${email}`);
+
+    // Update the user document in the database with the new OTP
+    const user = await Student.findOneAndUpdate({ email }, { otp }, { new: true });
+    if (user) {
+      // Send success response
+      res.status(200).send({ message: "OTP resent successfully", status: true });
+    } else {
+      // Send error response if user is not found
+      res.status(404).send({ message: "User not found", status: false });
+    }
   } catch (error) {
     // Handle errors
     console.error("Error resending OTP:", error);
     res.status(500).send("Internal server error");
   }
 };
+
+
+
 
 /**
  * Uploads a file to a cloud storage service (e.g., Cloudinary) and sends back the stored image URL.
@@ -385,26 +411,35 @@ const resetEmail = async (req, res) => {
  * @returns {Promise<void>} - A promise that resolves once the OTP verification process is complete.
  */
 const verifyOTP = async (req, res) => {
-  const { otpCode } = req.body;
+  const { email, otpCode } = req.body;
   try {
-    // Find the user by OTP code
-    const user = await Student.findOne({ otpCode });
+    // Find the user by email
+    const user = await Student.findOne({ email });
 
-    if (user) {
+    if (!user) {
+      // User not found
+      console.log("User not found");
+      return res.status(404).json({ message: "User not found", status: false });
+    }
+
+    // Compare the provided OTP code with the user's OTP code
+    if (user.otpCode === otpCode) {
       // OTP verified successfully
       console.log("OTP verified");
-      res.status(200).json({ message: "OTP verified successfully", status: true });
+      return res.status(200).send({ message: "OTP verified successfully", status: true });
     } else {
       // Invalid OTP
       console.log("Invalid OTP");
-      res.status(400).json({ message: "Invalid OTP", status: false });
+      return res.status(400).send({ message: "Invalid OTP", status: false });
     }
   } catch (error) {
     // Handle errors
     console.error("Error verifying OTP:", error);
-    res.status(500).json({ message: "Internal server error", status: false });
+    return res.status(500).send({ message: "Internal server error", status: false });
   }
 };
+
+
 
 
 
@@ -456,6 +491,7 @@ module.exports = {
   signup,
   login,
   verifyOTP,
+  sendOTP,
   resendOTP,
   uploadFile,
   resetEmail,

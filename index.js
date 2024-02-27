@@ -4,7 +4,7 @@ const router = express.Router()
 const cors = require("cors")
 require("dotenv").config()
 let PORT = process.env.PORT
-const userRouter = require("./routes/user.route")
+const userRouter = require("./routes/auth.route")
 
 
 app.use(cors())

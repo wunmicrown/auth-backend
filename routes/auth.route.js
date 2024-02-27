@@ -28,7 +28,7 @@ router.post("/verifyOTP", verifyOTP);
 router.post("/resendOTP", resendOTP);
 router.post("/uploadFile", uploadFile);
 router.post("/resetEmail", ValidatorMDW, resetEmail);
-router.post('/resetpassword', ValidatorMDW, resetpassword);
+router.post('/resetpassword',  resetpassword);
 router.post('/verifyToken', verifyToken);
 
 authRoutes.use("/auth", router)
