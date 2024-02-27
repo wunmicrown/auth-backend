@@ -210,14 +210,13 @@ const login = async (req, res) => {
     // Check if passwords match
     if (!match) {
       console.log("Incorrect password");
-      return res.status(401).json({ message: "Incorrect password", status: false });
+      return res.status(401).send({ message: "Incorrect password", status: false });
     }
 
     // Password is correct, generate JWT token for authentication
     const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
-
     // Send successful login response with user details and token
-    return res.status(200).json({ message: "Login successful", status: true, user, token });
+    return res.status(200).send({ message: "Login successful", status: true, user, token});
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -455,11 +454,13 @@ const resetpassword = async (req, res) => {
 
   try {
     // Validate the request payload
-    const validationResult = await schemaValidatorHandler(resetPasswordlPayLoad, { password: newPassword, email });
-    if (!validationResult.valid) {
-      return res.status(400).json({ message: "Invalid request payload", errors: validationResult.error });
+    // const validationResult = await schemaValidatorHandler(resetPasswordlPayLoad, { password: newPassword, email });
+    // if (!validationResult.valid) {
+    //   return res.status(400).json({ message: "Invalid request payload", errors: validationResult.error });
+    // }
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: "Missing required fields", status: false });
     }
-
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
