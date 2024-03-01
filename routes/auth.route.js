@@ -1,5 +1,4 @@
 const express = require("express");
-const router = express.Router();
 const authRoutes = express.Router();
 
 const {
@@ -13,25 +12,31 @@ const {
     verifyOTP,
     verifyToken,
     signupVerification,
-    resendSignupOTP 
+    resendSignupOTP,
+    getUserDetails
 } = require("../controllers/user.controller");
 const { ValidatorMDW } = require("../validators/AuthHandler");
+const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
 
 // routes Define
 
-router.get("/", displayWelcome);
-router.post("/signup", ValidatorMDW, signup);
-router.post("/signupVerify", signupVerification);
-router.post("/resendSignupOTP", resendSignupOTP); 
-router.post("/signin", ValidatorMDW, login);
-router.post("/verifyOTP", verifyOTP);
-router.post("/resendOTP", resendOTP);
-router.post("/uploadFile", uploadFile);
-router.post("/resetEmail", ValidatorMDW, resetEmail);
-router.post('/resetpassword',  resetpassword);
-router.post('/verifyToken', verifyToken);
+authRoutes.get("/", displayWelcome);
+authRoutes.post("/signup", ValidatorMDW, signup);
+authRoutes.post("/signupVerify", signupVerification);
+authRoutes.post("/resendSignupOTP", resendSignupOTP); 
+authRoutes.post("/signin", ValidatorMDW, login);
+authRoutes.post("/verifyOTP", verifyOTP);
+authRoutes.post("/resendOTP", resendOTP);
+authRoutes.post("/uploadFile", uploadFile);
+authRoutes.post('/resetpassword',  resetpassword);
 
-authRoutes.use("/auth", router)
+
+authRoutes.get('/verifyToken', verifyToken);
+
+
+
+
+
 
 
 module.exports = authRoutes;

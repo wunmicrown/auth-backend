@@ -15,7 +15,8 @@ mongoose.connect(URI)
 let studentSchema = mongoose.Schema({
     firstName: String,
     lastName: String,
-    otp: { type: Number },
+    otp: { type: Number,unique: true  },
+    emailVerified: { type: Boolean, default: false },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true, unique: true }
 })

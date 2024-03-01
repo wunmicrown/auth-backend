@@ -12,7 +12,8 @@ const {
 
 } = require("../validators/AuthSchema");
 const from = process.env.MAIL_USER
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const { excludeFields } = require("../utils/common.methods");
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
@@ -76,7 +77,8 @@ const signup = async (req, res) => {
       otp: otpGen // Save OTP along with other user details
     });
     const user = await student.save();
-
+   const _user= excludeFields(user.toObject(), ['password', 'otp', "__v"]);
+    console.log(_user);
     // Sending OTP to the user's email
     const mailOptions = {
       from: process.env.MAIL_USER,
@@ -93,7 +95,7 @@ const signup = async (req, res) => {
         res.status(500).send("Failed to send verification email");
       } else {
         console.log('Email sent: ' + info.response);
-        res.status(201).send({ message: "User registered successfully. Verification OTP sent to email.", user: user });
+        res.status(201).send({ message: "User registered successfully. Verification OTP sent to email.", user: _user });
       }
     });
   } catch (err) {
@@ -193,15 +195,16 @@ const login = async (req, res) => {
   try {
     // Find the user by email
     const user = await Student.findOne({ email });
-
+   const _user= excludeFields(user.toObject(), ['password', 'otp', "__v"]);
+    console.log(_user);
     // Check if user exists
     if (!user) {
       console.log("User not found");
       return res.status(404).json({ message: "User not found", status: false });
     }
     // Log the plaintext password and the hashed password retrieved from the database
-    console.log("Plaintext password:", password, user.password);
-    console.log("Hashed password from database:", user.password);
+    // console.log("Plaintext password:", password, user.password);
+    // console.log("Hashed password from database:", user.password);
 
 
     // Compare the provided password with the hashed password in the database
@@ -216,7 +219,7 @@ const login = async (req, res) => {
     // Password is correct, generate JWT token for authentication
     const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
     // Send successful login response with user details and token
-    return res.status(200).send({ message: "Login successful", status: true, user, token});
+    return res.status(200).json({ message: "Login successful", status: true, _user, token });
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -233,30 +236,32 @@ const login = async (req, res) => {
  * @returns {Promise<void>} - A promise that resolves once the token verification process is complete.
  */
 const verifyToken = (req, res) => {
-  // Extract the token from the request body
-  const { token } = req.body;
-
-  // Get the secret key for token verification
-  const secretkey = process.env.SECRETKEY;
-
+  // Extract the token from the request headers    
+  const { authorization } = req.headers;
   // Check if token is provided
-  if (!token) {
-    return res.status(401).send({ message: 'Token not provided', status: false });
-  }
+  if (!authorization) {
+    return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
+  }  
+  
+  /**
+   * Auhtorization header expected in form of "Bearer token"
+   */
+  // Get the secret key for token verification
+  const token = authorization.split(' ')[1];
+  if (!authorization) {
+      return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
+    }
+
+  const secretkey = process.env.SECRETKEY;  
 
   // Verify the token using the secret key
-  jwt.verify(token, secretkey, (err, decoded) => {
-    // Log decoded token for debugging
-    console.log(decoded);
-
+  jwt.verify(token, secretkey, async(err, decoded) => {  
     // Check if token verification failed
     if (err) {
       console.error('Token Verification failed:', err.message);
-      return res.status(401).json({ message: 'Token verification failed', status: false });
+      return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
     } else {
-      // Token verification succeeded
-      console.log('Token verified successfully');
-      res.status(200).send({ message: 'Token verified successfully', status: true, token: token, valid: true });
+      return res.status(200).send({ message: 'Token Verified', status: true, expiresIn: decoded.exp});
     }
   });
 };
@@ -314,7 +319,7 @@ const resendOTP = async (req, res) => {
       // Optionally, include an HTML version
       html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p>`,
     };
-    
+
 
     // Send email
     await transporter.sendMail(mailOptions);
@@ -347,12 +352,22 @@ const resendOTP = async (req, res) => {
  * @param {Object} res - The response object to send back to the client.
  */
 const uploadFile = (req, res) => {
-  let image = req.body.myFile;
-  cloudinary.uploader.upload(image, ((result, err) => {
-    console.log(result);
-    let storedImage = result.secure_url;
-    res.send({ message: "image uploaded successfully", status: true, storedImage });
-  }))
+  // Access the uploaded file using req.file
+  const image = req.file;
+  if (!image) {
+    return res.status(400).json({ message: 'No file uploaded', status: false });
+  }
+
+  // Upload the file to Cloudinary or any other storage service
+  cloudinary.uploader.upload(image.path, (result, err) => {
+    if (err) {
+      console.error('Error uploading file:', err);
+      return res.status(500).json({ message: 'Error uploading file', status: false });
+    }
+    // Send back the URL of the uploaded image
+    const storedImage = result.secure_url;
+    res.json({ message: 'Image uploaded successfully', status: true, storedImage });
+  });
 };
 
 
@@ -482,6 +497,33 @@ const resetpassword = async (req, res) => {
 };
 
 
+/**
+ * Fetches user details based on the authenticated user's ID.
+ * 
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
+const getUserDetails = async (req, res) => {
+  try {
+
+    // req.auth_id from middle ware
+    // Retrieve user details from the database based on the authenticated user's ID
+    const userId = req.auth_id; // Assuming you're storing the user ID in the JWT payload
+    // console.log(userId);
+    const user = await Student.findById(userId).select('-password -otp -__v'); 
+    // console.log({user});   
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // user = excludeFields(user.toObject(), ['password', 'otp', "__v"]);
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 
 
@@ -499,6 +541,7 @@ module.exports = {
   resetpassword,
   verifyToken,
   signupVerification,
-  resendSignupOTP
+  resendSignupOTP,
+  getUserDetails
 };
 
