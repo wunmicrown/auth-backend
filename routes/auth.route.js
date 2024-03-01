@@ -6,14 +6,12 @@ const {
     login,
     signup,
     uploadFile,
-    resetEmail,
     resetpassword,
     resendOTP,
     verifyOTP,
     verifyToken,
-    signupVerification,
+    verifyEmail,
     resendSignupOTP,
-    getUserDetails
 } = require("../controllers/user.controller");
 const { ValidatorMDW } = require("../validators/AuthHandler");
 const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
@@ -22,7 +20,7 @@ const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
 
 authRoutes.get("/", displayWelcome);
 authRoutes.post("/signup", ValidatorMDW, signup);
-authRoutes.post("/signupVerify", signupVerification);
+authRoutes.post("/verifyEmail", verifyEmail);
 authRoutes.post("/resendSignupOTP", resendSignupOTP); 
 authRoutes.post("/signin", ValidatorMDW, login);
 authRoutes.post("/verifyOTP", verifyOTP);

@@ -76,9 +76,9 @@ const signup = async (req, res) => {
       ...req.body,
       otp: otpGen // Save OTP along with other user details
     });
-    const user = await student.save();
-   const _user= excludeFields(user.toObject(), ['password', 'otp', "__v"]);
-    console.log(_user);
+    let user = await student.save();
+    user = excludeFields(user.toObject(), ['password', 'otp', "__v"]);
+    // console.log(_user);
     // Sending OTP to the user's email
     const mailOptions = {
       from: process.env.MAIL_USER,
@@ -95,7 +95,7 @@ const signup = async (req, res) => {
         res.status(500).send("Failed to send verification email");
       } else {
         console.log('Email sent: ' + info.response);
-        res.status(201).send({ message: "User registered successfully. Verification OTP sent to email.", user: _user });
+        res.status(201).send({ message: "User registered successfully. Verification OTP sent to email.", user: user });
       }
     });
   } catch (err) {
@@ -112,27 +112,30 @@ const signup = async (req, res) => {
  * @param {Object} res - The response object to send back to the client.
  * @returns {Promise<void>} - A promise that resolves once the OTP verification process is complete.
  */
-const signupVerification = async (req, res) => {
-  // Destructure OTP from the request body
-  const { otp } = req.body;
 
+
+// Backend code to handle OTP verification
+
+const verifyEmail = async (req, res) => {
+  const { email, otp } = req.body;
+console.log({email,otp});
   try {
-    // Find the user by the provided OTP
-    const user = await Student.findOne({ otp });
-
-    // Check if a user with the provided OTP exists
-    if (user) {
-      console.log("OTP verified");
-      res.send({ message: "OTP verified successfully", status: true });
-    } else {
-      console.log("OTP not verified");
-      res.status(400).send({ message: "Invalid OTP", status: false });
+    // Find the user by email
+    let user = await Student.findOne({ email, otp });
+    if(!user){
+      return res.status(400).json({ message: "Invalid OTP" });
     }
+    // If OTP is correct, mark email as verified
+    user.emailVerified = true;
+    user = await user.save();
+    user = excludeFields(user.toObject(), ["password", "otp"])
+    return res.status(200).json({message:"Email successfully verified", user});
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    res.status(500).send({ message: "Internal server error", status: false });
+    console.error("Error verifying email:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 /**
@@ -195,12 +198,12 @@ const login = async (req, res) => {
   try {
     // Find the user by email
     const user = await Student.findOne({ email });
-   const _user= excludeFields(user.toObject(), ['password', 'otp', "__v"]);
-    console.log(_user);
+    const _user = excludeFields(user.toObject(), ['password', 'otp', "__v"]);
+    // console.log(_user);
     // Check if user exists
     if (!user) {
       console.log("User not found");
-      return res.status(404).json({ message: "User not found", status: false });
+      return res.status(404).json({ message: "Invalid credentials", status: false });
     }
     // Log the plaintext password and the hashed password retrieved from the database
     // console.log("Plaintext password:", password, user.password);
@@ -208,18 +211,19 @@ const login = async (req, res) => {
 
 
     // Compare the provided password with the hashed password in the database
-    // const match = await bcrypt.compare(password, user.password);
-    // console.log("bcrypt.compare result:", match);
-    // // Check if passwords match
-    // if (!match) {
-    //   console.log("Incorrect password");
-    //   return res.status(401).send({ message: "Incorrect password", status: false });
-    // }
+    const match = await bcrypt.compare(password, user.password);
+    console.log(match);
+    console.log("bcrypt.compare result:", match);
+    // Check if passwords match
+    if (!match) {
+      console.log("Incorrect password");
+      return res.status(401).send({ message: "Invalid credentials", status: false });
+    }
 
     // Password is correct, generate JWT token for authentication
     const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
     // Send successful login response with user details and token
-    return res.status(200).json({ message: "Login successful", status: true, _user, token });
+    return res.status(200).json({ message: "Login successful", status: true, user:_user, token });
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -241,27 +245,27 @@ const verifyToken = (req, res) => {
   // Check if token is provided
   if (!authorization) {
     return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
-  }  
-  
+  }
+
   /**
    * Auhtorization header expected in form of "Bearer token"
    */
   // Get the secret key for token verification
   const token = authorization.split(' ')[1];
   if (!authorization) {
-      return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
-    }
+    return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
+  }
 
-  const secretkey = process.env.SECRETKEY;  
+  const secretkey = process.env.SECRETKEY;
 
   // Verify the token using the secret key
-  jwt.verify(token, secretkey, async(err, decoded) => {  
+  jwt.verify(token, secretkey, async (err, decoded) => {
     // Check if token verification failed
     if (err) {
       console.error('Token Verification failed:', err.message);
       return res.status(401).send({ message: 'Unauthorized request, please login', status: false });
     } else {
-      return res.status(200).send({ message: 'Token Verified', status: true, expiresIn: decoded.exp});
+      return res.status(200).send({ message: 'Token Verified', status: true, expiresIn: decoded.exp });
     }
   });
 };
@@ -511,7 +515,7 @@ const getUserDetails = async (req, res) => {
     // Retrieve user details from the database based on the authenticated user's ID
     const userId = req.auth_id; // Assuming you're storing the user ID in the JWT payload
     // console.log(userId);
-    const user = await Student.findById(userId).select('-password -otp -__v'); 
+    const user = await Student.findById(userId).select('-password -otp -__v');
     // console.log({user});   
     // Check if user exists
     if (!user) {
@@ -540,7 +544,7 @@ module.exports = {
   resetEmail,
   resetpassword,
   verifyToken,
-  signupVerification,
+  verifyEmail,
   resendSignupOTP,
   getUserDetails
 };
