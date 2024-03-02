@@ -5,7 +5,7 @@ const {
     displayWelcome,
     login,
     signup,
-    uploadFile,
+    // uploadProfilePic,
     resetpassword,
     resendOTP,
     verifyOTP,
@@ -25,7 +25,7 @@ authRoutes.post("/resendEmailOTP", resendEmailOTP);
 authRoutes.post("/signin", ValidatorMDW, login);
 authRoutes.post("/verifyOTP", verifyOTP);
 authRoutes.post("/resendOTP", resendOTP);
-authRoutes.post("/uploadFile", uploadFile);
+// authRoutes.post("/uploadProfilePic", uploadProfilePic);
 authRoutes.post('/resetpassword',  resetpassword);
 
 

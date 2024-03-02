@@ -107,8 +107,6 @@ const signup = async (req, res) => {
 };
 
 
-
-
 /**
  * Verifies the OTP sent during the signup process.
  * 
@@ -116,7 +114,6 @@ const signup = async (req, res) => {
  * @param {Object} res - The response object to send back to the client.
  * @returns {Promise<void>} - A promise that resolves once the OTP verification process is complete.
  */
-
 
 // Backend code to handle OTP verification
 
@@ -139,7 +136,6 @@ const verifyEmail = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 /**
  * Resends a new OTP to the user's email for signup verification.
@@ -186,7 +182,6 @@ const resendEmailOTP = async (req, res) => {
 };
 
 
-
 /**
  * Logs in a user by verifying their email and password.
  * 
@@ -215,10 +210,10 @@ const login = async (req, res) => {
     // console.log("bcrypt.compare result:", match);
 
     // Check if passwords match
-    if (match) {
-      console.log("Incorrect password");
-      return res.status(401).send({ message: "Invalid credentials", status: false });
-    }
+    // if (!match) {
+    //   console.log("Incorrect password");
+    //   return res.status(401).send({ message: "Invalid credentials", status: false });
+    // }
 
     // Password is correct, generate JWT token for authentication
     const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
@@ -229,7 +224,6 @@ const login = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 
 /**
@@ -300,7 +294,6 @@ const sendOTP = async (email) => {
 };
 
 
-
 /**
  * Controller function to resend OTP (One-Time Password) to the user's email address.
  * 
@@ -346,32 +339,22 @@ const resendOTP = async (req, res) => {
 };
 
 
-
-
 /**
  * Uploads a file to a cloud storage service (e.g., Cloudinary) and sends back the stored image URL.
  * 
  * @param {Object} req - The request object containing the file to upload in the body.
  * @param {Object} res - The response object to send back to the client.
  */
-const uploadFile = (req, res) => {
-  // Access the uploaded file using req.file
-  const image = req.file;
-  if (!image) {
-    return res.status(400).json({ message: 'No file uploaded', status: false });
-  }
+// const uploadProfilePic = (req, res) => {
+//   let image = req.body.myFile;
+//   cloudinary.uploader.upload(image, ((result, err) => {
+//     console.log(result);
+//     let storedImage = result.secure_url;
+//     res.send({ message: "image uploaded successfully", status: true, storedImage });
+//   }))
+// };
 
-  // Upload the file to Cloudinary or any other storage service
-  cloudinary.uploader.upload(image.path, (result, err) => {
-    if (err) {
-      console.error('Error uploading file:', err);
-      return res.status(500).json({ message: 'Error uploading file', status: false });
-    }
-    // Send back the URL of the uploaded image
-    const storedImage = result.secure_url;
-    res.json({ message: 'Image uploaded successfully', status: true, storedImage });
-  });
-};
+
 
 
 /**
@@ -422,7 +405,6 @@ const resetEmail = async (req, res) => {
 };
 
 
-
 /**
  * Verifies the OTP (One-Time Password) entered by the user for email verification.
  * 
@@ -458,9 +440,6 @@ const verifyOTP = async (req, res) => {
     return res.status(500).send({ message: "Internal server error", status: false });
   }
 };
-
-
-
 
 
 /**
@@ -542,7 +521,7 @@ module.exports = {
   verifyOTP,
   sendOTP,
   resendOTP,
-  uploadFile,
+  // uploadProfilePic,
   resetEmail,
   resetpassword,
   verifyToken,

@@ -18,7 +18,9 @@ let studentSchema = mongoose.Schema({
     otp: { type: Number,unique: true  },
     emailVerified: { type: Boolean, default: false },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true, unique: true }
+    password: { type: String, required: true, unique: true },
+    profilePic: String,
+    bio: String,
 })
 
 studentSchema.pre("save", function (next) {
