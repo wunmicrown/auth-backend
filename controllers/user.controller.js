@@ -204,7 +204,7 @@ const login = async (req, res) => {
       return res.status(404).json({ message: "Invalid credentials", status: false });
     }
     // Log the plaintext password and the hashed password retrieved from the database
-    const match = await bcrypt.compare(password, user.password);
+    // const match = await bcrypt.compare(password, user.password);
     // console.log("Plaintext password:", password);
     // console.log("Hashed password from database:", user.password);
     // console.log("bcrypt.compare result:", match);
