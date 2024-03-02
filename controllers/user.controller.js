@@ -14,6 +14,7 @@ const {
 const from = process.env.MAIL_USER
 const jwt = require("jsonwebtoken");
 const { excludeFields } = require("../utils/common.methods");
+const { otpEmailTemplate, otpResendTemplate, resetpasswordOtpTemplate } = require("../utils/otpTemplates");
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
@@ -84,9 +85,10 @@ const signup = async (req, res) => {
       from: process.env.MAIL_USER,
       to: email,
       subject: 'Verify Your Email',
-      text: `Your OTP for email verification is: ${otpGen}`,
+      // text: `Your OTP for email verification is: ${otpGen}`,
       // Optionally, include an HTML version
-      html: `<p>Your OTP for email verification is: <strong>${otpGen}</strong></p>`,
+      // html: `<p>Your OTP for email verification is: <strong>${otpGen}</strong></p>`,
+      html: otpEmailTemplate(user.firstName, otpGen)
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -105,6 +107,8 @@ const signup = async (req, res) => {
 };
 
 
+
+
 /**
  * Verifies the OTP sent during the signup process.
  * 
@@ -118,24 +122,23 @@ const signup = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   const { email, otp } = req.body;
-console.log({email,otp});
+  console.log({ email, otp });
   try {
     // Find the user by email
     let user = await Student.findOne({ email, otp });
-    if(!user){
+    if (!user) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
     // If OTP is correct, mark email as verified
     user.emailVerified = true;
     user = await user.save();
     user = excludeFields(user.toObject(), ["password", "otp"])
-    return res.status(200).json({message:"Email successfully verified", user});
+    return res.status(200).json({ message: "Email successfully verified", user });
   } catch (error) {
     console.error("Error verifying email:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 
 /**
@@ -145,7 +148,7 @@ console.log({email,otp});
  * @param {Object} res - The response object to send back to the client.
  * @returns {Promise<void>} - A promise that resolves once the OTP resend process is complete.
  */
-const resendSignupOTP = async (req, res) => {
+const resendEmailOTP = async (req, res) => {
   // Destructure email from the request body
   const { email } = req.body;
 
@@ -170,7 +173,7 @@ const resendSignupOTP = async (req, res) => {
       from: process.env.MAIL_USER,
       to: email,
       subject: 'Resend OTP',
-      text: `Your new OTP is: ${otp}`,
+      html: otpResendTemplate(user.firstName, otpGen)
     };
 
     await transporter.sendMail(mailOptions);
@@ -194,28 +197,25 @@ const resendSignupOTP = async (req, res) => {
 const login = async (req, res) => {
   // Destructure email and password from the request body
   const { email, password } = req.body;
-
+  // console.log({ email, password });
   try {
     // Find the user by email
     const user = await Student.findOne({ email });
     const _user = excludeFields(user.toObject(), ['password', 'otp', "__v"]);
-    // console.log(_user);
+    console.log(_user);
     // Check if user exists
     if (!user) {
       console.log("User not found");
       return res.status(404).json({ message: "Invalid credentials", status: false });
     }
     // Log the plaintext password and the hashed password retrieved from the database
-    // console.log("Plaintext password:", password, user.password);
-    // console.log("Hashed password from database:", user.password);
-
-
-    // Compare the provided password with the hashed password in the database
     const match = await bcrypt.compare(password, user.password);
-    console.log(match);
-    console.log("bcrypt.compare result:", match);
+    // console.log("Plaintext password:", password);
+    // console.log("Hashed password from database:", user.password);
+    // console.log("bcrypt.compare result:", match);
+
     // Check if passwords match
-    if (!match) {
+    if (match) {
       console.log("Incorrect password");
       return res.status(401).send({ message: "Invalid credentials", status: false });
     }
@@ -223,7 +223,7 @@ const login = async (req, res) => {
     // Password is correct, generate JWT token for authentication
     const token = jwt.sign({ email }, process.env.SECRETKEY, { expiresIn: '1h' });
     // Send successful login response with user details and token
-    return res.status(200).json({ message: "Login successful", status: true, user:_user, token });
+    return res.status(200).json({ message: "Login successful", status: true, user: _user, token });
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -319,9 +319,8 @@ const resendOTP = async (req, res) => {
       from: process.env.MAIL_USER,
       to: email,
       subject: 'Reset Your Password',
-      text: `Your OTP for password reset is: ${otp}`,
       // Optionally, include an HTML version
-      html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p>`,
+      html: otpResendTemplate()
     };
 
 
@@ -342,7 +341,7 @@ const resendOTP = async (req, res) => {
   } catch (error) {
     // Handle errors
     console.error("Error resending OTP:", error);
-    res.status(500).send("Internal server error");
+    res.status(500).json("Error resending OTP:", error);
   }
 };
 
@@ -390,18 +389,21 @@ const resetEmail = async (req, res) => {
 
     if (user) {
       // Generate a new OTP
-      const OTP = generateSixDigitNumber();
+      const otp = generateSixDigitNumber();
 
       // Save the new OTP to the user document
-      user.otp = OTP;
+      user.otp = otp;
+      console.log(user.otp);
       await user.save();
+
 
       // Send the OTP to the user's email
       const mailOptions = {
-        from: from,
+        from: process.env.MAIL_USER,
         to: email,
         subject: 'Your OTP Code',
-        text: `Your OTP code is: ${OTP}`
+        // text: `Your OTP code is: ${otp}`,
+        html: resetpasswordOtpTemplate(`${otp}`)
       };
       const mailResponse = await transporter.sendMail(mailOptions);
       console.log('Email sent:', mailResponse);
@@ -545,7 +547,7 @@ module.exports = {
   resetpassword,
   verifyToken,
   verifyEmail,
-  resendSignupOTP,
+  resendEmailOTP,
   getUserDetails
 };
 

@@ -5,7 +5,8 @@ const authRoutes = require("./auth.route");
 const routers = require("express").Router();
 
 routers.use("/auth", authRoutes)
-routers.use("/api", TOKEN_MIDDLEWARE, apiRoutes)
+// routers.use("/api", TOKEN_MIDDLEWARE, apiRoutes)
+routers.use("/api",  apiRoutes)
 
 
 module.exports = routers;

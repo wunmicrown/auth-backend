@@ -5,9 +5,11 @@ const {
     getUserDetails,
     resetEmail
 } = require("../controllers/user.controller");
-const { ValidatorMDW } = require("../validators/AuthHandler");
+const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
+// const { ValidatorMDW } = require("../validators/AuthHandler");
 
-apiRoutes.post("/resetEmail", ValidatorMDW, resetEmail);
+// apiRoutes.post("/resetEmail", TOKEN_MIDDLEWARE, resetEmail);
+apiRoutes.post("/resetEmail",  resetEmail);
 apiRoutes.post('/verifyToken', verifyToken);
 apiRoutes.get('/getUser',  getUserDetails);
 

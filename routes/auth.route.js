@@ -11,7 +11,7 @@ const {
     verifyOTP,
     verifyToken,
     verifyEmail,
-    resendSignupOTP,
+    resendEmailOTP,
 } = require("../controllers/user.controller");
 const { ValidatorMDW } = require("../validators/AuthHandler");
 const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
@@ -21,7 +21,7 @@ const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
 authRoutes.get("/", displayWelcome);
 authRoutes.post("/signup", ValidatorMDW, signup);
 authRoutes.post("/verifyEmail", verifyEmail);
-authRoutes.post("/resendSignupOTP", resendSignupOTP); 
+authRoutes.post("/resendEmailOTP", resendEmailOTP); 
 authRoutes.post("/signin", ValidatorMDW, login);
 authRoutes.post("/verifyOTP", verifyOTP);
 authRoutes.post("/resendOTP", resendOTP);
