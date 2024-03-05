@@ -14,7 +14,7 @@ const {
 const from = process.env.MAIL_USER
 const jwt = require("jsonwebtoken");
 const { excludeFields } = require("../utils/common.methods");
-const { otpEmailTemplate, otpResendTemplate, resetpasswordOtpTemplate } = require("../utils/otpTemplates");
+const { otpEmailTemplate, otpResendTemplate, resetpasswordOtpTemplate, changedEmailTemplate } = require("../utils/otpTemplates");
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
@@ -123,6 +123,7 @@ const verifyEmail = async (req, res) => {
   try {
     // Find the user by email
     let user = await Student.findOne({ email, otp });
+    console.log(user);
     if (!user) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
@@ -191,11 +192,12 @@ const resendEmailOTP = async (req, res) => {
  */
 const login = async (req, res) => {
   // Destructure email and password from the request body
-  const { email, password } = req.body;
+  const { email } = req.body;
   // console.log({ email, password });
   try {
     // Find the user by email
     const user = await Student.findOne({ email });
+    console.log(user);
     const _user = excludeFields(user.toObject(), ['password', 'otp', "__v"]);
     console.log(_user);
     // Check if user exists
@@ -481,6 +483,40 @@ const resetpassword = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body;
+    console.log({ email, oldPassword, newPassword });
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Find the user by email and update the password
+    const user = await Student.findOneAndUpdate({ email }, { password: hashedNewPassword }, { new: true });
+    console.log(user);
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Compare the old password provided with the hashed password stored in the database
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    console.log(isPasswordValid);
+    // If the old password is not valid, return an error
+    // if (isPasswordValid) {
+    //   return res.status(400).json({ message: 'Invalid old password' });
+    // }
+
+    // Return a success response
+    return res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
 
 /**
  * Fetches user details based on the authenticated user's ID.
@@ -510,6 +546,73 @@ const getUserDetails = async (req, res) => {
   }
 };
 
+const changeEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const userId = req.auth_id; // Extract user ID from authenticated request
+
+    // Generate OTP
+    const otp = generateSixDigitNumber(); // You need to implement this function
+
+    // Fetch user data
+    const user = await Student.findById(userId);
+
+    // Send OTP to the new email address (you can use a service like SendGrid or implement your own email sending logic)
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Verify Your Email',
+      html: changedEmailTemplate(user.firstName, otp) // Assuming you have access to firstName in your user model
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+        res.status(500).send("Failed to send verification email");
+      } else {
+        console.log('Email sent: ' + info.response);
+        res.status(201).send({ message: "Verification OTP sent to email.", user: user });
+      }
+    });
+
+    // Save the OTP in the user's document in the database
+    const updatedUser = await Student.findByIdAndUpdate(userId, { email, otp }, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ status: true, message: 'OTP sent to your email address for verification' });
+  } catch (error) {
+    console.error('Error updating email:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+const verifyChangedEmail = async (req, res) => {
+  const { email, otp } = req.body;
+  console.log({ email, otp }); // Log received email and OTP
+
+  try {
+    // Find the user by email and OTP
+    const user = await Student.findOne({ email, otp });
+    console.log(user);
+    if (!user) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // If OTP is correct, mark email as verified
+    user.emailVerified = true;
+    await user.save(); // Save the updated user
+
+    // Return success response
+    return res.status(200).json({ message: "Email successfully verified", user });
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 
 
@@ -527,6 +630,9 @@ module.exports = {
   verifyToken,
   verifyEmail,
   resendEmailOTP,
-  getUserDetails
+  getUserDetails,
+  changeEmail,
+  verifyChangedEmail,
+  changePassword
 };
 
