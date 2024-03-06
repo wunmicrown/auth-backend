@@ -1,9 +1,12 @@
 const Student = require("../model/user.model");
 const bcrypt = require('bcrypt');
-const cloudinary = require("cloudinary");
-require('dotenv').config();
+const path = require('path');
 const nodemailer = require('nodemailer');
+const fs = require('fs').promises;
 const otpGenerator = require('otp-generator');
+
+require('dotenv').config();
+
 const {
   signupPayloadValidator,
   schemaValidatorHandler,
@@ -15,18 +18,13 @@ const from = process.env.MAIL_USER
 const jwt = require("jsonwebtoken");
 const { excludeFields } = require("../utils/common.methods");
 const { otpEmailTemplate, otpResendTemplate, resetpasswordOtpTemplate, changedEmailTemplate } = require("../utils/otpTemplates");
+const { cloudUpload, cloudDelete } = require("../utils/cloudinary.utils");
 
 const displayWelcome = (req, res) => {
   res.send("Hello World");
   console.log("Hello World");
 };
 
-
-cloudinary.config({
-  cloud_name: 'dphfgjzit',
-  api_key: '879477868729251',
-  api_secret: process.env.API_SECRET
-});
 
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
@@ -40,7 +38,6 @@ const transporter = nodemailer.createTransport({
 const generateSixDigitNumber = () => {
   return Math.floor(Math.random() * 900000) + 100000;
 };
-
 
 
 /**
@@ -85,9 +82,6 @@ const signup = async (req, res) => {
       from: process.env.MAIL_USER,
       to: email,
       subject: 'Verify Your Email',
-      // text: `Your OTP for email verification is: ${otpGen}`,
-      // Optionally, include an HTML version
-      // html: `<p>Your OTP for email verification is: <strong>${otpGen}</strong></p>`,
       html: otpEmailTemplate(user.firstName, otpGen)
     };
 
@@ -340,23 +334,22 @@ const resendOTP = async (req, res) => {
   }
 };
 
-
 /**
  * Uploads a file to a cloud storage service (e.g., Cloudinary) and sends back the stored image URL.
  * 
  * @param {Object} req - The request object containing the file to upload in the body.
  * @param {Object} res - The response object to send back to the client.
  */
-// const uploadProfilePic = (req, res) => {
-//   let image = req.body.myFile;
-//   cloudinary.uploader.upload(image, ((result, err) => {
-//     console.log(result);
-//     let storedImage = result.secure_url;
-//     res.send({ message: "image uploaded successfully", status: true, storedImage });
-//   }))
-// };
-
-
+const uploadProfilePic = (req, res) => {
+  console.log(req.body);
+  let image = req.body.myFile;
+  console.log("image:", image);
+  cloudinary.uploader.upload(image, ((result, err) => {
+    console.log(result);
+    let storedImage = result.secure_url;
+    res.send({ message: "image uploaded successfully", status: true, storedImage });
+  }));
+};
 
 
 /**
@@ -515,9 +508,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-
-
-
 /**
  * Fetches user details based on the authenticated user's ID.
  * 
@@ -588,6 +578,7 @@ const changeEmail = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 const verifyChangedEmail = async (req, res) => {
   const { email, otp } = req.body;
   console.log({ email, otp }); // Log received email and OTP
@@ -614,17 +605,71 @@ const verifyChangedEmail = async (req, res) => {
 
 
 
+const testUpload = async (req, res) => {
+  try {
+    //req.file for single file : req.files for multiple files [array of object]
+    if (!req.file || Object.keys(req.file).length === 0) {
+      return res.status(400).json({ message: 'No files were uploaded.' });
+    }
+
+    // const user = await Student.findByIdAndUpdate(
+    //     {_id:req.auth_id}, {$set: {profilePic: req.file.path}}, {new: true, upsert:true}
+    //)
+
+    const user = await Student.findById(req.auth_id);
+    oldPic = user.profilePic ?? null;
+    if (oldPic) {
+
+      // Below for disk storage deletion
+      /*const  oldPicPath = path.join(process.cwd(), oldPic)
+      try {
+        await fs.unlink(oldPicPath)   
+      } catch (error) {
+        //
+      } 
+      */
+
+      // Below for cloudinary deletion
+      let id = oldPic.split('/').pop().split('.')[0];
+      const { status, error } = await cloudDelete(id);
+      if (!status) console.log(error);
+    }
+
+    // Below for ordianry cloudinary uploading without using (multer-storage-cloudinary)
+    /*
+    newPicPath = path.join(process.cwd(), req.file.path)
+    const { object: cloudinaryObject, error } = await cloudUpload(newPicPath);
+    if (error) {
+      return res.status(500).json({ message: error.message })
+    }
+    await fs.unlink(newPicPath)
+    user.profilePic = cloudinaryObject.secure_url;
+    */
+
+    // Using (multer-storage-cloudinary) i.e not pre-saving file to local disk
+    user.profilePic = req.file.path;
+    user.save();
+    const _user = excludeFields(user.toObject(), ["otp", "password", "__v"])
+    return res.status(200).json({ user: _user })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 
 
 
 module.exports = {
+  testUpload,
   displayWelcome,
   signup,
   login,
   verifyOTP,
   sendOTP,
   resendOTP,
-  // uploadProfilePic,
+  uploadProfilePic,
   resetEmail,
   resetpassword,
   verifyToken,

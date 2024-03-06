@@ -19,17 +19,14 @@ mongoose.connect(URI)
         emailVerified: { type: Boolean, default: false },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
-        profilePic: String,
-        bio: String,
-        oldPassword: String, // Add oldPassword field
-        newPassword: String, // Add newPassword field
-        confirmPassword: String, // Add confirmPassword field
+        profilePic: {type:String},
+        bio: {type: String},
     });
     
 
 studentSchema.pre("save", function (next) {
     bcrypt.hash(this.password, 10, (err, hash) => {
-        console.log(hash);
+        // console.log(hash);
         this.password = hash;
         next();
     })

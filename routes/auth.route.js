@@ -5,7 +5,7 @@ const {
     displayWelcome,
     login,
     signup,
-    // uploadProfilePic,
+    uploadProfilePic,
     resetpassword,
     resendOTP,
     verifyOTP,
@@ -13,10 +13,12 @@ const {
     verifyEmail,
     resendEmailOTP,
     verifyChangedEmail,
-    changePassword
+    changePassword,
+    testUpload
 } = require("../controllers/user.controller");
 const { ValidatorMDW } = require("../validators/AuthHandler");
 const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
+const { multerUploader, multerDynamicUploader, multerCloudUploader } = require("../middlewares/multer.upload");
 
 // routes Define
 
@@ -28,12 +30,26 @@ authRoutes.post("/resendEmailOTP", resendEmailOTP);
 authRoutes.post("/signin", ValidatorMDW, login);
 authRoutes.post("/verifyOTP", verifyOTP);
 authRoutes.post("/resendOTP", resendOTP);
-// authRoutes.post("/uploadProfilePic", uploadProfilePic);
+authRoutes.post("/uploadProfilePic", uploadProfilePic);
 authRoutes.post('/resetpassword',  resetpassword);
 authRoutes.post('/changePassword',  changePassword);
 
 
 authRoutes.get('/verifyToken', verifyToken);
+
+// authRoutes.post("/upload-dp",TOKEN_MIDDLEWARE, multerUploader.single("image"), testUpload) // Single file
+// authRoutes.post("/upload-dp", TOKEN_MIDDLEWARE, multerUploader.array("image" /*, 4*/), testUpload) // Multiple file
+
+
+authRoutes.post("/upload-dp",TOKEN_MIDDLEWARE, multerCloudUploader.single("image"), testUpload) // Single file
+// authRoutes.post("/upload-dp", TOKEN_MIDDLEWARE, multerCloudUploader.array("image" /*, 4*/), testUpload) // Multiple file
+
+// authRoutes.post("/upload-dp", multerDynamicUploader("videos/").single("image"), testUpload) // Dynamic path Single file
+// authRoutes.post("/upload-dp", multerDynamicUploader("images/").array("image" /*, 4*/), testUpload) // Dynamic path Multiple file
+
+
+
+
 
 
 
