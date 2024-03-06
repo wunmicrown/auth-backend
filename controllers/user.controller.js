@@ -334,23 +334,6 @@ const resendOTP = async (req, res) => {
   }
 };
 
-/**
- * Uploads a file to a cloud storage service (e.g., Cloudinary) and sends back the stored image URL.
- * 
- * @param {Object} req - The request object containing the file to upload in the body.
- * @param {Object} res - The response object to send back to the client.
- */
-const uploadProfilePic = (req, res) => {
-  console.log(req.body);
-  let image = req.body.myFile;
-  console.log("image:", image);
-  cloudinary.uploader.upload(image, ((result, err) => {
-    console.log(result);
-    let storedImage = result.secure_url;
-    res.send({ message: "image uploaded successfully", status: true, storedImage });
-  }));
-};
-
 
 /**
  * Resets the email verification OTP (One-Time Password) for a user and sends the new OTP to their email address.
@@ -604,6 +587,12 @@ const verifyChangedEmail = async (req, res) => {
 };
 
 
+/**
+ * Uploads a file to a cloud storage service (e.g., Cloudinary) and sends back the stored image URL.
+ * 
+ * @param {Object} req - The request object containing the file to upload in the body.
+ * @param {Object} res - The response object to send back to the client.
+ */
 
 const testUpload = async (req, res) => {
   try {
@@ -669,7 +658,6 @@ module.exports = {
   verifyOTP,
   sendOTP,
   resendOTP,
-  uploadProfilePic,
   resetEmail,
   resetpassword,
   verifyToken,
