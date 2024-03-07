@@ -524,6 +524,12 @@ const changeEmail = async (req, res) => {
     const { email } = req.body;
     const userId = req.auth_id; // Extract user ID from authenticated request
 
+    // Check if the new email is already in use
+    const existingUser = await Student.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email address is already in use' });
+    }
+
     // Generate OTP
     const otp = generateSixDigitNumber(); // You need to implement this function
 
@@ -561,6 +567,7 @@ const changeEmail = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 const verifyChangedEmail = async (req, res) => {
   const { email, otp } = req.body;

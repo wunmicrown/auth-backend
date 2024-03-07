@@ -23,7 +23,7 @@ const { multerUploader, multerDynamicUploader, multerCloudUploader } = require("
 
 authRoutes.get("/", displayWelcome);
 authRoutes.post("/signup", ValidatorMDW, signup);
-authRoutes.post("/verifyEmail", verifyEmail);
+authRoutes.post("/verifyEmail",  TOKEN_MIDDLEWARE, verifyEmail);
 authRoutes.post("/verifyChangedEmail", verifyChangedEmail);
 authRoutes.post("/resendEmailOTP", resendEmailOTP); 
 authRoutes.post("/signin", ValidatorMDW, login);
