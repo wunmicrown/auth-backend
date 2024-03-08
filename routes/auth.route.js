@@ -13,7 +13,8 @@ const {
     resendEmailOTP,
     verifyChangedEmail,
     changePassword,
-    testUpload
+    testUpload,
+    update_user
 } = require("../controllers/user.controller");
 const { ValidatorMDW } = require("../validators/AuthHandler");
 const { TOKEN_MIDDLEWARE } = require("../middlewares/auth.token");
@@ -31,6 +32,7 @@ authRoutes.post("/verifyOTP", verifyOTP);
 authRoutes.post("/resendOTP", resendOTP);
 authRoutes.post('/resetpassword',  resetpassword);
 authRoutes.post('/changePassword',  changePassword);
+authRoutes.post("/updateUser", TOKEN_MIDDLEWARE,update_user)
 
 
 authRoutes.get('/verifyToken', verifyToken);

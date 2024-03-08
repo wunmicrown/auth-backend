@@ -21,6 +21,7 @@ mongoose.connect(URI)
         password: { type: String, required: true },
         profilePic: {type:String},
         bio: {type: String},
+        about:{type:String}
     });
     
 

@@ -654,6 +654,51 @@ const testUpload = async (req, res) => {
   }
 }
 
+const update_user = async (req, res) => {
+  try {
+    const { bio, about } = req.body;
+    const userId = req.auth_id; 
+
+    console.log("Received update request for user:", userId);
+    console.log("Request body:", req.body);
+
+    // Validate if bio and about are provided in the request
+    if (!bio && !about) {
+      return res.status(400).json({ error: "Please provide bio or about to update" });
+    }
+
+    // Construct the update object with the provided bio and about fields
+    const updateObject = {};
+    if (bio) {
+      updateObject.bio = bio;
+    }
+    if (about) {
+      updateObject.about = about;
+    }
+
+    // console.log("Update object:", updateObject);
+
+    // Update the user document in the database
+    let updatedUser = await Student.findByIdAndUpdate(userId, updateObject, { new: true });
+
+    if (!updatedUser) {
+      console.log("User not found");
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Exclude private fields from the updated user object
+    updatedUser = excludeFields(updatedUser.toObject(), ["otp", "password", "__v"]);
+
+    // console.log("User updated successfully:", updatedUser);
+
+    // Send the updated user data in the response
+    res.json({ updatedUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 
 
 
@@ -673,6 +718,7 @@ module.exports = {
   getUserDetails,
   changeEmail,
   verifyChangedEmail,
-  changePassword
+  changePassword,
+  update_user
 };
 
