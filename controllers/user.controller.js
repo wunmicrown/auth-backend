@@ -204,7 +204,6 @@ const login = async (req, res) => {
     // console.log("Plaintext password:", password);
     // console.log("Hashed password from database:", user.password);
     // console.log("bcrypt.compare result:", match);
-
     // Check if passwords match
     // if (!match) {
     //   console.log("Incorrect password");
